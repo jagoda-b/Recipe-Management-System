@@ -1,13 +1,11 @@
 package recipes.controller;
-// RecipeController.java
 
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import recipes.Recipe;
-import recipes.repository.RecipeRepository;
+import recipes.service.RecipeService;
 
 import javax.validation.Valid;
 import java.util.Map;
@@ -16,15 +14,15 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/recipe")
 public class RecipeController {
-    private final RecipeRepository recipeRepository;
+    private final RecipeService recipeService;
 
-    public RecipeController(RecipeRepository recipeRepository) {
-        this.recipeRepository = recipeRepository;
+    public RecipeController(RecipeService recipeService) {
+        this.recipeService = recipeService;
     }
 
     @PostMapping("/new")
     public ResponseEntity<Map<String, Long>> createRecipe(@Valid @RequestBody Recipe recipe) {
-       Recipe savedRecipe = recipeRepository.save(recipe);
+       Recipe savedRecipe = recipeService.save(recipe);
 
         return ResponseEntity.ok(Map.of("id", savedRecipe.getId()));
     }
@@ -37,7 +35,7 @@ public class RecipeController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Recipe> getRecipe(@PathVariable Long id) {
-        Optional<Recipe> recipe = recipeRepository.findById(id);
+        Optional<Recipe> recipe = getById(id);
 
         return recipe.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -45,10 +43,10 @@ public class RecipeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Recipe> deleteRecipe(@PathVariable Long id) {
-        Optional<Recipe> recipe = recipeRepository.findById(id);
+        Optional<Recipe> recipe = getById(id);
 
         if (recipe.isPresent()) {
-            recipeRepository.deleteById(id);
+            recipeService.deleteById(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -57,26 +55,30 @@ public class RecipeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateRecipe(@PathVariable Long id, @Valid @RequestBody Recipe recipe) {
-        Optional<Recipe> optionalRecipe = recipeRepository.findById(id);
+        Optional<Recipe> optionalRecipe = getById(id);
 
         if (optionalRecipe.isPresent()) {
             recipe.setId(id);
-            recipeRepository.save(recipe);
+            recipeService.save(recipe);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
+    private Optional<Recipe> getById(Long id) {
+        return recipeService.findById(id);
+    }
+
     @GetMapping("/search")
     public ResponseEntity<Iterable<Recipe>> searchRecipes(@RequestParam(required = false) String category,
                                                           @RequestParam(required = false) String name) {
         if (category != null && name == null) {
-            return new ResponseEntity<>(recipeRepository
-                    .findByCategoryIgnoreCase(category, Sort.by(Sort.Direction.DESC, "date")), HttpStatus.OK);
+            return new ResponseEntity<>(recipeService.findByCategory(category), HttpStatus.OK);
+
         } else if (name != null && category == null) {
-            return new ResponseEntity<>(recipeRepository
-                    .findByNameContainingIgnoreCase(name, Sort.by(Sort.Direction.DESC, "date")), HttpStatus.OK);
+            return new ResponseEntity<>(recipeService.findByName(name), HttpStatus.OK);
+
         } else {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
