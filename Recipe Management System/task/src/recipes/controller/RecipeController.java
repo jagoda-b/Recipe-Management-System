@@ -1,5 +1,6 @@
 package recipes.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -7,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import recipes.Recipe;
 import recipes.service.RecipeService;
 
-import javax.validation.Valid;
 import java.util.Map;
 import java.util.Optional;
 
